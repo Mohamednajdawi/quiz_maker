@@ -84,9 +84,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       }
 
       // Sort history by timestamp
-      allHistory.sort((a, b) => 
-        (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime)
-      );
+      allHistory.sort((a, b) {
+        final aTimestamp = a['timestamp'] is DateTime 
+            ? a['timestamp'] as DateTime
+            : DateTime.parse(a['timestamp'].toString());
+        final bTimestamp = b['timestamp'] is DateTime 
+            ? b['timestamp'] as DateTime
+            : DateTime.parse(b['timestamp'].toString());
+        return bTimestamp.compareTo(aTimestamp); // Most recent first
+      });
 
       setState(() {
         _analyticsData = {
@@ -285,6 +291,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     final scores = _analyticsData!['scores'] as List<int>;
     if (scores.isEmpty) return const SizedBox.shrink();
 
+    // If there's only one score, duplicate it to show a point
+    final displayScores = scores.length == 1 ? [scores[0], scores[0]] : scores;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,9 +307,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
           child: CustomPaint(
             size: const Size(double.infinity, 200),
             painter: PerformanceChartPainter(
-              scores: scores,
+              scores: displayScores,
               animation: _animation,
               color: Theme.of(context).colorScheme.primary,
+              isSingleScore: scores.length == 1,
             ),
           ),
         ),
@@ -312,6 +322,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     final categoryAccuracy = _analyticsData!['categoryAccuracy'] as Map<String, double>;
     if (categoryAccuracy.isEmpty) return const SizedBox.shrink();
 
+    // Sort categories by accuracy
+    final sortedEntries = categoryAccuracy.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -320,7 +334,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
-        ...categoryAccuracy.entries.map((entry) {
+        ...sortedEntries.map((entry) {
           final accuracy = (entry.value * 100).roundToDouble();
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -430,11 +444,13 @@ class PerformanceChartPainter extends CustomPainter {
   final List<int> scores;
   final Animation<double> animation;
   final Color color;
+  final bool isSingleScore;
 
   PerformanceChartPainter({
     required this.scores,
     required this.animation,
     required this.color,
+    this.isSingleScore = false,
   });
 
   @override
@@ -455,30 +471,44 @@ class PerformanceChartPainter extends CustomPainter {
     final points = <Offset>[];
     final width = size.width;
     final height = size.height;
-    final horizontalStep = width / (scores.length - 1);
+    
+    // For single score, we'll show a point in the middle
+    final horizontalStep = isSingleScore 
+        ? width 
+        : width / (scores.length - 1);
 
     for (var i = 0; i < scores.length; i++) {
-      final x = i * horizontalStep;
+      // For single score, center the point
+      final x = isSingleScore 
+          ? width / 2
+          : i * horizontalStep;
       final y = height - (scores[i] / maxScore * height * animation.value);
       points.add(Offset(x, y));
     }
 
-    // Draw line
-    final path = Path();
-    path.moveTo(points.first.dx, points.first.dy);
-    for (var i = 1; i < points.length; i++) {
-      final p0 = points[i - 1];
-      final p1 = points[i];
-      path.lineTo(p1.dx, p1.dy);
+    // Draw line only if not a single score
+    if (!isSingleScore) {
+      final path = Path();
+      path.moveTo(points.first.dx, points.first.dy);
+      for (var i = 1; i < points.length; i++) {
+        final p0 = points[i - 1];
+        final p1 = points[i];
+        path.lineTo(p1.dx, p1.dy);
+      }
+      canvas.drawPath(path, paint);
     }
-    canvas.drawPath(path, paint);
 
-    // Draw dots
+    // Draw dots with larger radius for single score
     for (final point in points) {
-      canvas.drawCircle(point, 4, dotPaint);
+      canvas.drawCircle(point, isSingleScore ? 6 : 4, dotPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant PerformanceChartPainter oldDelegate) {
+    return oldDelegate.scores != scores ||
+           oldDelegate.animation.value != animation.value ||
+           oldDelegate.color != color ||
+           oldDelegate.isSingleScore != isSingleScore;
+  }
 } 
