@@ -4,6 +4,7 @@ import 'dart:async';
 import '../services/quiz_service.dart';
 import 'quiz/quiz_screen.dart';
 import '../models/question.dart';
+import 'url_quiz_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -425,6 +426,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () => _startQuiz(category),
                             );
                           },
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const URLQuizScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.link),
+                          label: const Text('Generate Quiz from URL'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
                         ),
                       ],
                     ),

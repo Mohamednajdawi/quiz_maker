@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/admin/admin_panel_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/url_quiz_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
