@@ -3,7 +3,12 @@ import '../services/quiz_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class URLQuizScreen extends StatefulWidget {
-  const URLQuizScreen({super.key});
+  final String? initialUrl;
+  
+  const URLQuizScreen({
+    super.key,
+    this.initialUrl,
+  });
 
   @override
   State<URLQuizScreen> createState() => _URLQuizScreenState();
@@ -20,6 +25,15 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
   List<int> _userAnswers = [];
   bool _showResults = false;
   DateTime? _startTime;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialUrl != null) {
+      _urlController.text = widget.initialUrl!;
+      _generateQuiz();
+    }
+  }
 
   Future<void> _generateQuiz() async {
     if (_urlController.text.isEmpty) {
