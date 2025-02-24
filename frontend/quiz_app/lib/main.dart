@@ -6,12 +6,23 @@ import 'screens/auth/auth_screen.dart';
 import 'screens/admin/admin_panel_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/url_quiz_screen.dart';
+import 'screens/quiz_history_screen.dart';
+import 'services/quiz_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Enable Firebase Auth persistence
+  await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+
+  // Enable Firestore persistence
+  await QuizService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -50,11 +61,41 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Show loading indicator while the connection state is in progress
+        // Show loading indicator while initializing
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        // Handle errors
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      FirebaseAuth.instance.signOut();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AuthScreen()),
+                      );
+                    },
+                    child: const Text('Return to Login'),
+                  ),
+                ],
+              ),
             ),
           );
         }
