@@ -99,26 +99,6 @@ class QuizService {
     });
   }
 
-  // Save quiz result
-  Future<void> saveQuizResult({
-    required String userId,
-    required String category,
-    required int score,
-    required int totalQuestions,
-    required Duration timeTaken,
-  }) async {
-    return _withRetry(() async {
-      await _firestore.collection('results').add({
-        'userId': userId,
-        'category': category,
-        'score': score,
-        'totalQuestions': totalQuestions,
-        'timeTaken': timeTaken.inSeconds,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
   // Get user's quiz history
   Future<List<Map<String, dynamic>>> getUserQuizHistory(String userId) async {
     return _withRetry(() async {
@@ -126,7 +106,7 @@ class QuizService {
           .collection('results')
           .where('userId', isEqualTo: userId)
           .orderBy('timestamp', descending: true)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get();
 
       return snapshot.docs
           .map((doc) => {
@@ -154,5 +134,102 @@ class QuizService {
     } catch (e) {
       throw Exception('Error generating quiz: $e');
     }
+  }
+
+  // Get user's URL quiz history with complete data
+  Future<List<Map<String, dynamic>>> getUserURLQuizHistory(String userId) async {
+    return _withRetry(() async {
+      final snapshot = await _firestore
+          .collection('url_quizzes')
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                ...doc.data(),
+                'timestamp': (doc.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              })
+          .toList();
+    });
+  }
+
+  // Get specific URL quiz details
+  Future<Map<String, dynamic>?> getURLQuizDetails(String quizId) async {
+    return _withRetry(() async {
+      final doc = await _firestore
+          .collection('url_quizzes')
+          .doc(quizId)
+          .get();
+
+      if (!doc.exists) return null;
+
+      return {
+        'id': doc.id,
+        ...doc.data()!,
+        'timestamp': (doc.data()!['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      };
+    });
+  }
+
+  // Save complete URL quiz data and results
+  Future<void> saveURLQuizResult({
+    required String userId,
+    required Map<String, dynamic> quizData,
+    required List<int> userAnswers,
+    required int score,
+    required Duration timeTaken,
+  }) async {
+    return _withRetry(() async {
+      final quizDoc = await _firestore.collection('url_quizzes').add({
+        'userId': userId,
+        'topic': quizData['topic'] ?? 'URL Quiz',
+        'questions': quizData['questions'],
+        'userAnswers': userAnswers,
+        'score': score,
+        'totalQuestions': quizData['questions'].length,
+        'timeTaken': timeTaken.inSeconds,
+        'timestamp': FieldValue.serverTimestamp(),
+        'sourceUrl': quizData['url'] ?? '',
+      });
+
+      await quizDoc.get();
+
+      final resultDoc = await _firestore.collection('results').add({
+        'userId': userId,
+        'category': quizData['topic'] ?? 'URL Quiz',
+        'score': score,
+        'totalQuestions': quizData['questions'].length,
+        'timeTaken': timeTaken.inSeconds,
+        'timestamp': FieldValue.serverTimestamp(),
+        'quizRef': quizDoc.id,
+        'type': 'url',
+      });
+
+      await resultDoc.get();
+    });
+  }
+
+  // Save quiz result
+  Future<void> saveQuizResult({
+    required String userId,
+    required String category,
+    required int score,
+    required int totalQuestions,
+    required Duration timeTaken,
+  }) async {
+    return _withRetry(() async {
+      final docRef = await _firestore.collection('results').add({
+        'userId': userId,
+        'category': category,
+        'score': score,
+        'totalQuestions': totalQuestions,
+        'timeTaken': timeTaken.inSeconds,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      await docRef.get();
+    });
   }
 } 

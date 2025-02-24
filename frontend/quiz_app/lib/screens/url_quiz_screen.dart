@@ -92,59 +92,24 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
 
     try {
       final score = _calculateScore();
-      final totalQuestions = _quizData!['questions'].length;
       final timeTaken = DateTime.now().difference(_startTime!);
       
-      // Save in the background without blocking UI
-      _quizService.saveQuizResult(
+      // Save complete quiz data including questions and answers
+      await _quizService.saveURLQuizResult(
         userId: userId,
-        category: _quizData!['topic'] ?? 'URL Quiz',
+        quizData: {
+          ..._quizData!,
+          'url': _urlController.text,
+        },
+        userAnswers: _userAnswers,
         score: score,
-        totalQuestions: totalQuestions,
         timeTaken: timeTaken,
-      ).then((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Results saved successfully!'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      }).catchError((e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Failed to save results'),
-              action: SnackBarAction(
-                label: 'Retry',
-                onPressed: () => _saveResults(userId, score, totalQuestions, timeTaken),
-              ),
-            ),
-          );
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error processing results')),
       );
-    }
-  }
 
-  Future<void> _saveResults(String userId, int score, int totalQuestions, Duration timeTaken) async {
-    try {
-      await _quizService.saveQuizResult(
-        userId: userId,
-        category: _quizData!['topic'] ?? 'URL Quiz',
-        score: score,
-        totalQuestions: totalQuestions,
-        timeTaken: timeTaken,
-      );
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Results saved successfully!'),
+            content: Text('Quiz saved successfully!'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -153,10 +118,10 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to save results'),
+            content: const Text('Failed to save quiz'),
             action: SnackBarAction(
               label: 'Retry',
-              onPressed: () => _saveResults(userId, score, totalQuestions, timeTaken),
+              onPressed: _submitQuiz,
             ),
           ),
         );
