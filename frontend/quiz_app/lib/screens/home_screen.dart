@@ -152,98 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _startDummyQuiz() async {
-    final dummyQuestions = [
-      Question(
-        id: '1',
-        text: 'What is Flutter?',
-        options: [
-          'A mobile development framework',
-          'A bird',
-          'A web browser',
-          'A database',
-        ],
-        correctOptionIndex: 0,
-        explanation: 'Flutter is Google\'s UI toolkit for building beautiful, natively compiled applications for mobile, web, and desktop from a single codebase.',
-        category: 'Flutter',
-        difficulty: 1,
-        tags: ['flutter', 'basics'],
-      ),
-      Question(
-        id: '2',
-        text: 'What programming language is Flutter built with?',
-        options: [
-          'JavaScript',
-          'Java',
-          'Dart',
-          'Python',
-        ],
-        correctOptionIndex: 2,
-        explanation: 'Flutter uses Dart, a programming language also developed by Google.',
-        category: 'Flutter',
-        difficulty: 1,
-        tags: ['flutter', 'dart', 'basics'],
-      ),
-      Question(
-        id: '3',
-        text: 'What is a Widget in Flutter?',
-        options: [
-          'A database table',
-          'A UI element',
-          'A network request',
-          'A file format',
-        ],
-        correctOptionIndex: 1,
-        explanation: 'In Flutter, everything is a widget. Widgets are the basic building blocks of a Flutter app\'s user interface.',
-        category: 'Flutter',
-        difficulty: 1,
-        tags: ['flutter', 'widgets', 'basics'],
-      ),
-      Question(
-        id: '4',
-        text: 'What is "Hot Reload" in Flutter?',
-        options: [
-          'A way to restart the app',
-          'A way to update code without restarting',
-          'A way to clear cache',
-          'A way to compile code',
-        ],
-        correctOptionIndex: 1,
-        explanation: 'Hot Reload allows you to see changes in your code reflected in your app instantly without losing the current state.',
-        category: 'Flutter',
-        difficulty: 2,
-        tags: ['flutter', 'development', 'tools'],
-      ),
-      Question(
-        id: '5',
-        text: 'What is StatefulWidget in Flutter?',
-        options: [
-          'A widget that never changes',
-          'A widget that can change over time',
-          'A widget for images only',
-          'A widget for text only',
-        ],
-        correctOptionIndex: 1,
-        explanation: 'StatefulWidget is a widget that can change its appearance in response to events or user actions.',
-        category: 'Flutter',
-        difficulty: 2,
-        tags: ['flutter', 'widgets', 'state'],
-      ),
-    ];
-
-    if (!mounted) return;
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => QuizScreen(
-          questions: dummyQuestions,
-          category: 'Flutter Basics',
-        ),
-      ),
-    );
-  }
-
   Future<void> _signOut() async {
     if (_isLoading) return;
 
@@ -362,11 +270,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Expanded(
                               child: _QuickActionButton(
-                                icon: Icons.play_circle,
-                                label: 'Random Quiz',
-                                onTap: _categories.isEmpty ? _startDummyQuiz : () {
-                                  final random = _categories[DateTime.now().millisecondsSinceEpoch % _categories.length];
-                                  _startQuiz(random);
+                                icon: Icons.add_circle,
+                                label: 'Generate Quiz',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const URLQuizScreen(),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -431,19 +343,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                         const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const URLQuizScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.link),
-                          label: const Text('Generate Quiz from URL'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          ),
-                        ),
                       ],
                     ),
                   ),
