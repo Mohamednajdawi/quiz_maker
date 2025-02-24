@@ -10,6 +10,13 @@ class QuizService {
   static const Duration retryDelay = Duration(seconds: 2);
   static const String baseUrl = 'http://localhost:8000'; // Update with your backend URL
 
+  // Enable persistence
+  static Future<void> initialize() async {
+    await FirebaseFirestore.instance.enablePersistence(
+      const PersistenceSettings(synchronizeTabs: true),
+    );
+  }
+
   Future<T> _withRetry<T>(Future<T> Function() operation) async {
     int attempts = 0;
     while (attempts < maxRetries) {
