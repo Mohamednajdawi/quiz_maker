@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'url_quiz_screen.dart';
 import 'quiz_history_screen.dart';
 import 'dart:ui';
+import 'analytics_screen.dart';
 
 class FootballPlayer {
   final String name;
@@ -224,60 +225,131 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 24),
 
                 // Football Players Dropdown
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                      ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Quick Quiz',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<FootballPlayer>(
-                            isExpanded: true,
-                            value: _selectedPlayer,
-                            hint: Text(
-                              'Select a Football Player',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                            Theme.of(context).colorScheme.secondary.withOpacity(0.15),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).shadowColor.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              hoverColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<FootballPlayer>(
+                                  isExpanded: true,
+                                  value: _selectedPlayer,
+                                  hint: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.sports_soccer,
+                                        color: Theme.of(context).colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Select a Football Player',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  items: footballPlayers.map((player) {
+                                    return DropdownMenuItem(
+                                      value: player,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.person,
+                                              color: Theme.of(context).colorScheme.primary,
+                                              size: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            player.name,
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onBackground,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: _onPlayerSelected,
+                                  icon: AnimatedRotation(
+                                    duration: const Duration(milliseconds: 200),
+                                    turns: _selectedPlayer != null ? 0.5 : 0,
+                                    child: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  dropdownColor: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                                  menuMaxHeight: 300,
+                                  elevation: 8,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
-                            items: footballPlayers.map((player) {
-                              return DropdownMenuItem(
-                                value: player,
-                                child: Text(
-                                  player.name,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onBackground,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: _onPlayerSelected,
-                            icon: Icon(
-                              Icons.sports_soccer,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            dropdownColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
@@ -335,8 +407,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       label: 'Analytics',
                       description: 'Track progress',
                       gradient: [Colors.orange.shade400, Colors.orange.shade700],
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Coming soon!')),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                       ),
                     ),
                     _QuickActionButton(

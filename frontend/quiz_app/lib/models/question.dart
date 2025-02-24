@@ -7,7 +7,7 @@ class Question {
   final String explanation;
   final List<String> tags;
   final String category;
-  final int difficulty; // 1-3 (Easy, Medium, Hard)
+  final int difficulty;
 
   Question({
     required this.id,
@@ -25,11 +25,11 @@ class Question {
     return Question(
       id: json['id'] as String,
       text: json['text'] as String,
-      options: List<String>.from(json['options']),
+      options: List<String>.from(json['options'] as List),
       correctOptionIndex: json['correctOptionIndex'] as int,
       imageUrl: json['imageUrl'] as String?,
       explanation: json['explanation'] as String,
-      tags: List<String>.from(json['tags']),
+      tags: List<String>.from(json['tags'] as List),
       category: json['category'] as String,
       difficulty: json['difficulty'] as int,
     );
@@ -37,7 +37,6 @@ class Question {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'text': text,
       'options': options,
       'correctOptionIndex': correctOptionIndex,

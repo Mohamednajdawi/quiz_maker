@@ -125,56 +125,96 @@ class _QuizScreenState extends State<QuizScreen> {
             ...List.generate(
               question.options.length,
               (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: OutlinedButton(
-                  onPressed: () => _selectAnswer(index),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: _answers[_currentIndex] == index
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : null,
-                    padding: const EdgeInsets.all(16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    question.options[index],
-                    style: TextStyle(
-                      color: _answers[_currentIndex] == index
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : null,
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Material(
+                  color: _answers[_currentIndex] == index
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                      : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: () => _selectAnswer(index),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: _answers[_currentIndex] == index
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _answers[_currentIndex] == index
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade500,
+                              ),
+                              color: _answers[_currentIndex] == index
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            child: _answers[_currentIndex] == index
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${String.fromCharCode(65 + index)}. ${question.options[index]}',
+                              style: TextStyle(
+                                color: _answers[_currentIndex] == index
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (_currentIndex > 0)
-                ElevatedButton(
-                  onPressed: _previousQuestion,
-                  child: const Text('Previous'),
-                )
-              else
-                const SizedBox(),
-              ElevatedButton(
-                onPressed:
-                    _answers[_currentIndex] != null ? _nextQuestion : null,
-                child: Text(
-                  _currentIndex < widget.questions.length - 1
-                      ? 'Next'
-                      : 'Finish',
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _currentIndex > 0 ? _previousQuestion : null,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Previous'),
                 ),
-              ),
-            ],
-          ),
+                ElevatedButton.icon(
+                  onPressed: _answers[_currentIndex] != null
+                      ? _currentIndex < widget.questions.length - 1
+                          ? _nextQuestion
+                          : _finishQuiz
+                      : null,
+                  icon: Icon(
+                    _currentIndex < widget.questions.length - 1
+                        ? Icons.arrow_forward
+                        : Icons.check,
+                  ),
+                  label: Text(
+                    _currentIndex < widget.questions.length - 1
+                        ? 'Next'
+                        : 'Finish',
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -220,18 +260,28 @@ class QuizResultScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Score: $score/$totalQuestions',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${percentage.toStringAsFixed(1)}%',
+                      percentage >= 80
+                          ? '🎉 Excellent!'
+                          : percentage >= 60
+                              ? '👍 Good Job!'
+                              : '💪 Keep Practicing!',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '$score/$totalQuestions correct (${percentage.round()}%)',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: percentage >= 80
+                                ? Colors.green
+                                : percentage >= 60
+                                    ? Colors.orange
+                                    : Colors.red,
+                          ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
-                      'Time: ${minutes}m ${seconds}s',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      'Time: $minutes:${seconds.toString().padLeft(2, '0')}',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ],
                 ),
@@ -252,12 +302,40 @@ class QuizResultScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Question ${index + 1}',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      Row(
+                        children: [
+                          Icon(
+                            userAnswers[index] == questions[index].correctOptionIndex
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            color: userAnswers[index] == questions[index].correctOptionIndex
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Question ${index + 1}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Text(questions[index].text),
+                      if (questions[index].imageUrl != null) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: questions[index].imageUrl!,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.error),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Text(
                         'Your Answer: ${userAnswers[index] != null ? questions[index].options[userAnswers[index]!] : 'Not answered'}',
@@ -282,34 +360,28 @@ class QuizResultScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.home),
+                  label: const Text('Back to Home'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+              ],
+            ),
           ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Implement share functionality
-                  },
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share Results'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  child: const Text('Back to Home'),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
