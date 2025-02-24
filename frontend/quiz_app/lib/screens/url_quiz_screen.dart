@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/quiz_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class URLQuizScreen extends StatefulWidget {
   const URLQuizScreen({super.key});
@@ -11,12 +12,14 @@ class URLQuizScreen extends StatefulWidget {
 class _URLQuizScreenState extends State<URLQuizScreen> {
   final _urlController = TextEditingController();
   final _quizService = QuizService();
+  final _stopwatch = Stopwatch();
   Map<String, dynamic>? _quizData;
   bool _isLoading = false;
   String? _error;
   int _currentQuestionIndex = 0;
   List<int> _userAnswers = [];
   bool _showResults = false;
+  DateTime? _startTime;
 
   Future<void> _generateQuiz() async {
     if (_urlController.text.isEmpty) {
@@ -39,6 +42,9 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
         _currentQuestionIndex = 0;
         _userAnswers = List.filled(quiz['questions'].length, -1);
       });
+      _stopwatch.reset();
+      _stopwatch.start();
+      _startTime = DateTime.now();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -69,10 +75,93 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
     }
   }
 
-  void _submitQuiz() {
+  Future<void> _submitQuiz() async {
+    // Show results immediately
     setState(() {
       _showResults = true;
     });
+
+    // Save results in the background
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Results not saved - please sign in to save your progress')),
+      );
+      return;
+    }
+
+    try {
+      final score = _calculateScore();
+      final totalQuestions = _quizData!['questions'].length;
+      final timeTaken = DateTime.now().difference(_startTime!);
+      
+      // Save in the background without blocking UI
+      _quizService.saveQuizResult(
+        userId: userId,
+        category: _quizData!['topic'] ?? 'URL Quiz',
+        score: score,
+        totalQuestions: totalQuestions,
+        timeTaken: timeTaken,
+      ).then((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Results saved successfully!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }).catchError((e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to save results'),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () => _saveResults(userId, score, totalQuestions, timeTaken),
+              ),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error processing results')),
+      );
+    }
+  }
+
+  Future<void> _saveResults(String userId, int score, int totalQuestions, Duration timeTaken) async {
+    try {
+      await _quizService.saveQuizResult(
+        userId: userId,
+        category: _quizData!['topic'] ?? 'URL Quiz',
+        score: score,
+        totalQuestions: totalQuestions,
+        timeTaken: timeTaken,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Results saved successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to save results'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () => _saveResults(userId, score, totalQuestions, timeTaken),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   int _calculateScore() {
@@ -379,6 +468,7 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
   @override
   void dispose() {
     _urlController.dispose();
+    _stopwatch.stop();
     super.dispose();
   }
 } 
