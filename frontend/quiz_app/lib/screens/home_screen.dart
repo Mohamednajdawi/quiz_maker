@@ -5,6 +5,7 @@ import '../services/quiz_service.dart';
 import 'quiz/quiz_screen.dart';
 import '../models/question.dart';
 import 'url_quiz_screen.dart';
+import 'quiz_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -375,9 +376,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: Icons.history,
                                 label: 'History',
                                 onTap: () {
-                                  // TODO: Navigate to history screen
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Coming soon!')),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const QuizHistoryScreen(),
+                                    ),
                                   );
                                 },
                               ),
