@@ -4,6 +4,13 @@ import 'url_quiz_screen.dart';
 import 'quiz_history_screen.dart';
 import 'dart:ui';
 
+class FootballPlayer {
+  final String name;
+  final String url;
+
+  const FootballPlayer({required this.name, required this.url});
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,6 +22,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _isLoading = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  FootballPlayer? _selectedPlayer;
+
+  final List<FootballPlayer> footballPlayers = const [
+    FootballPlayer(
+      name: "Lionel Messi",
+      url: "https://en.wikipedia.org/wiki/Lionel_Messi",
+    ),
+    FootballPlayer(
+      name: "Cristiano Ronaldo",
+      url: "https://en.wikipedia.org/wiki/Cristiano_Ronaldo",
+    ),
+    FootballPlayer(
+      name: "Erling Haaland",
+      url: "https://en.wikipedia.org/wiki/Erling_Haaland",
+    ),
+    FootballPlayer(
+      name: "Kylian Mbappé",
+      url: "https://en.wikipedia.org/wiki/Kylian_Mbapp%C3%A9",
+    ),
+    FootballPlayer(
+      name: "Mohamed Salah",
+      url: "https://en.wikipedia.org/wiki/Mohamed_Salah",
+    ),
+    FootballPlayer(
+      name: "Kevin De Bruyne",
+      url: "https://en.wikipedia.org/wiki/Kevin_De_Bruyne",
+    ),
+    FootballPlayer(
+      name: "Robert Lewandowski",
+      url: "https://en.wikipedia.org/wiki/Robert_Lewandowski",
+    ),
+    FootballPlayer(
+      name: "Virgil van Dijk",
+      url: "https://en.wikipedia.org/wiki/Virgil_van_Dijk",
+    ),
+    FootballPlayer(
+      name: "Luka Modrić",
+      url: "https://en.wikipedia.org/wiki/Luka_Modri%C4%87",
+    ),
+    FootballPlayer(
+      name: "Neymar",
+      url: "https://en.wikipedia.org/wiki/Neymar",
+    ),
+  ];
 
   @override
   void initState() {
@@ -43,6 +94,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
+  }
+
+  void _onPlayerSelected(FootballPlayer? player) {
+    setState(() => _selectedPlayer = player);
+    if (player != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => URLQuizScreen(initialUrl: player.url),
+        ),
       );
     }
   }
@@ -158,6 +221,65 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+
+                // Football Players Dropdown
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<FootballPlayer>(
+                            isExpanded: true,
+                            value: _selectedPlayer,
+                            hint: Text(
+                              'Select a Football Player',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                              ),
+                            ),
+                            items: footballPlayers.map((player) {
+                              return DropdownMenuItem(
+                                value: player,
+                                child: Text(
+                                  player.name,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onBackground,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: _onPlayerSelected,
+                            icon: Icon(
+                              Icons.sports_soccer,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            dropdownColor: Theme.of(context).colorScheme.surface,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
                 // Quick Actions Title with Animation
