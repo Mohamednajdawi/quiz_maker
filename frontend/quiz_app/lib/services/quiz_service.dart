@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/question.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class QuizService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
+  static const String baseUrl = 'http://localhost:8000'; // Update with your backend URL
 
   Future<T> _withRetry<T>(Future<T> Function() operation) async {
     int attempts = 0;
@@ -133,5 +136,23 @@ class QuizService {
               })
           .toList();
     });
+  }
+
+  Future<Map<String, dynamic>> generateQuiz(String url) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/generate-quiz'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'url': url}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to generate quiz: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error generating quiz: $e');
+    }
   }
 } 
