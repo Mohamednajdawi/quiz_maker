@@ -13,6 +13,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
   final _quizService = QuizService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _history = [];
+  List<Map<String, dynamic>> _urlQuizHistory = [];
   String? _error;
 
   @override
@@ -33,9 +34,15 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
         throw Exception('User not authenticated');
       }
 
-      final history = await _quizService.getUserQuizHistory(userId);
+      // Load both regular and URL quiz history
+      final [history, urlHistory] = await Future.wait([
+        _quizService.getUserQuizHistory(userId),
+        _quizService.getUserURLQuizHistory(userId),
+      ]);
+
       setState(() {
         _history = history;
+        _urlQuizHistory = urlHistory;
         _isLoading = false;
       });
     } catch (e) {
@@ -44,6 +51,128 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showQuizDetails(Map<String, dynamic> quiz) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        quiz['topic'] ?? quiz['category'] ?? 'Quiz',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                if (quiz['sourceUrl'] != null) ...[
+                  Text(
+                    'Source URL:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(quiz['sourceUrl']),
+                  const SizedBox(height: 16),
+                ],
+                Text(
+                  'Questions:',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                ...List.generate(
+                  (quiz['questions'] as List).length,
+                  (index) {
+                    final question = quiz['questions'][index];
+                    final userAnswer = quiz['userAnswers'][index];
+                    final correctAnswer = _letterToIndex(question['right_option']);
+                    final isCorrect = userAnswer == correctAnswer;
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      color: isCorrect
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  isCorrect ? Icons.check_circle : Icons.cancel,
+                                  color: isCorrect ? Colors.green : Colors.red,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Question ${index + 1}',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              question['question'],
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your answer: ${question['options'][userAnswer]}',
+                              style: TextStyle(
+                                color: isCorrect ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (!isCorrect) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Correct answer: ${question['options'][correctAnswer]}',
+                                style: const TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _letterToIndex(String letter) {
+    return letter.toLowerCase().codeUnitAt(0) - 'a'.codeUnitAt(0);
   }
 
   String _formatDuration(Duration duration) {
@@ -58,6 +187,10 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final allHistory = [..._history, ..._urlQuizHistory]
+      ..sort((a, b) => (b['timestamp'] as DateTime)
+          .compareTo(a['timestamp'] as DateTime));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quiz History'),
@@ -91,7 +224,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                     ],
                   ),
                 )
-              : _history.isEmpty
+              : allHistory.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -114,71 +247,81 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                       onRefresh: _loadHistory,
                       child: ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: _history.length,
+                        itemCount: allHistory.length,
                         itemBuilder: (context, index) {
-                          final quiz = _history[index];
+                          final quiz = allHistory[index];
                           final score = quiz['score'] as int;
                           final total = quiz['totalQuestions'] as int;
                           final percentage = (score / total * 100).round();
                           final timeTaken = Duration(seconds: quiz['timeTaken'] as int);
                           final timestamp = quiz['timestamp'] as DateTime;
+                          final isUrlQuiz = quiz['questions'] != null;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        percentage >= 80
-                                            ? Icons.star
-                                            : percentage >= 50
-                                                ? Icons.star_half
-                                                : Icons.star_border,
-                                        color: Colors.amber,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          quiz['category'] as String,
-                                          style: Theme.of(context).textTheme.titleMedium,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Score: $score/$total ($percentage%)',
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                          color: percentage >= 80
-                                              ? Colors.green
+                            child: InkWell(
+                              onTap: isUrlQuiz ? () => _showQuizDetails(quiz) : null,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          percentage >= 80
+                                              ? Icons.star
                                               : percentage >= 50
-                                                  ? Colors.orange
-                                                  : Colors.red,
-                                          fontWeight: FontWeight.bold,
+                                                  ? Icons.star_half
+                                                  : Icons.star_border,
+                                          color: Colors.amber,
                                         ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.timer_outlined, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text('Time: ${_formatDuration(timeTaken)}'),
-                                      const Spacer(),
-                                      const Icon(Icons.calendar_today, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(_formatDate(timestamp)),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            quiz['topic'] ?? quiz['category'] ?? 'Quiz',
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                          ),
+                                        ),
+                                        if (isUrlQuiz)
+                                          const Icon(Icons.link, size: 16),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Score: $score/$total ($percentage%)',
+                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                            color: percentage >= 80
+                                                ? Colors.green
+                                                : percentage >= 50
+                                                    ? Colors.orange
+                                                    : Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.timer_outlined, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text('Time: ${_formatDuration(timeTaken)}'),
+                                        const Spacer(),
+                                        const Icon(Icons.calendar_today, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(_formatDate(timestamp)),
+                                      ],
+                                    ),
+                                    if (isUrlQuiz) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Tap to view details',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.primary,
+                                            ),
+                                      ),
                                     ],
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );
