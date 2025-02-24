@@ -49,19 +49,25 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // Show loading indicator while the connection state is in progress
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
+        // User is logged in
         if (snapshot.hasData) {
           // Check if the user is an admin
-          // TODO: Implement proper admin check using custom claims or a separate collection
           if (snapshot.data!.email == 'admin@example.com') {
             return const AdminPanelScreen();
           }
           return const HomeScreen();
         }
 
+        // User is not logged in
         return const AuthScreen();
       },
     );
