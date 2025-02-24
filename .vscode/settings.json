@@ -1,0 +1,46 @@
+{
+  "python.defaultInterpreterPath": "/opt/env/.venv/bin/python",
+  "python.languageServer": "Pylance",
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUnboundVariable": "none",
+    "reportUndefinedVariable": "none",
+    "reportMissingImports": "none", // Adjust these to prevent overlaps
+    "reportMissingModuleSource": "none"
+    // ... other rules to disable as needed
+  },
+  "python.analysis.extraPaths": [
+    "./repository/bias_lab/packages/prompt_utilities/.venv/lib/python3.11/site-packages" // adding site packages to enable linting :)
+  ],
+  "python.terminal.activateEnvironment": false,
+  "editor.guides.bracketPairs": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": null,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit",
+      "source.sortImports": "explicit"
+    }
+  },
+  "notebook.formatOnSave.enabled": true,
+  "notebook.codeActionsOnSave": {
+    "notebook.source.fixAll": "explicit",
+    "notebook.source.organizeImports": "explicit"
+  },
+  "notebook.lineNumbers": "on",
+  "jupyter.useDefaultKernel": false,
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "prettier.tabWidth": 4,
+    "prettier.useTabs": false
+  },
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["-r P", ""],
+  "cSpell.diagnosticLevel": "Hint"
+}
