@@ -113,7 +113,7 @@ class QuizService {
           .collection('results')
           .where('userId', isEqualTo: userId)
           .orderBy('timestamp', descending: true)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
       return snapshot.docs
           .map((doc) => {
@@ -125,6 +125,26 @@ class QuizService {
     });
   }
 
+  // Get user's URL quiz history
+  Future<List<Map<String, dynamic>>> getUserURLQuizHistory(String userId) async {
+    return _withRetry(() async {
+      final snapshot = await _firestore
+          .collection('url_quizzes')
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .get(const GetOptions(source: Source.serverAndCache));
+
+      return snapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                ...doc.data(),
+                'timestamp': (doc.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              })
+          .toList();
+    });
+  }
+
+  // Generate quiz from URL
   Future<Map<String, dynamic>> generateQuiz(String url) async {
     try {
       final response = await http.post(
@@ -141,25 +161,6 @@ class QuizService {
     } catch (e) {
       throw Exception('Error generating quiz: $e');
     }
-  }
-
-  // Get user's URL quiz history with complete data
-  Future<List<Map<String, dynamic>>> getUserURLQuizHistory(String userId) async {
-    return _withRetry(() async {
-      final snapshot = await _firestore
-          .collection('url_quizzes')
-          .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => {
-                'id': doc.id,
-                ...doc.data(),
-                'timestamp': (doc.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
-              })
-          .toList();
-    });
   }
 
   // Get specific URL quiz details
@@ -180,7 +181,7 @@ class QuizService {
     });
   }
 
-  // Save complete URL quiz data and results
+  // Save URL quiz result
   Future<void> saveURLQuizResult({
     required String userId,
     required Map<String, dynamic> quizData,

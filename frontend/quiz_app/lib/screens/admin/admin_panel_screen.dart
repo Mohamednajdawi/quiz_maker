@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/question.dart';
 import '../../services/quiz_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -16,7 +17,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   List<Question> _questions = [];
   List<String> _categories = [];
   bool _isLoading = true;
-  String? _selectedCategory;
+  String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -27,24 +28,53 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
     try {
       final categories = await _quizService.getCategories();
-      if (categories.isNotEmpty) {
-        _selectedCategory = categories.first;
-        final questions =
-            await _quizService.getQuestionsByCategory(_selectedCategory!);
-        setState(() {
-          _categories = categories;
-          _questions = questions;
-        });
-      }
+      setState(() {
+        _categories = ['All', ...categories];
+        _selectedCategory = 'All';
+      });
+      await _loadQuestions();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
-      );
-    } finally {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadQuestions() async {
+    try {
+      setState(() => _isLoading = true);
+      final questions = _selectedCategory == 'All'
+          ? [] // TODO: Implement get all questions
+          : await _quizService.getQuestionsByCategory(_selectedCategory);
+      setState(() {
+        _questions = questions.map((q) {
+          // Convert the data to the correct format
+          final Map<String, dynamic> questionData = {
+            'id': q['id'] as String? ?? '',
+            'text': q['text'] as String? ?? '',
+            'options': (q['options'] as List?)?.map((e) => e.toString()).toList() ?? [],
+            'correctOptionIndex': q['correctOptionIndex'] as int? ?? 0,
+            'imageUrl': q['imageUrl'] as String?,
+            'explanation': q['explanation'] as String? ?? '',
+            'tags': (q['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
+            'category': q['category'] as String? ?? '',
+            'difficulty': q['difficulty'] as int? ?? 1,
+          };
+          return Question.fromJson(questionData);
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
       setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading questions: $e')),
+        );
+      }
     }
   }
 
@@ -73,7 +103,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       context: context,
       builder: (context) => QuestionFormDialog(
         question: question,
-        categories: _categories,
+        categories: _categories.where((c) => c != 'All').toList(),
         onSave: (newQuestion) async {
           try {
             if (question == null) {
@@ -192,9 +222,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 onChanged: (value) async {
                   if (value != null) {
                     setState(() => _selectedCategory = value);
-                    final questions =
-                        await _quizService.getQuestionsByCategory(value);
-                    setState(() => _questions = questions);
+                    await _loadQuestions();
                   }
                 },
               ),
@@ -203,32 +231,95 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         ),
         Expanded(
           child: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
             itemCount: _questions.length,
             itemBuilder: (context, index) {
               final question = _questions[index];
               return Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: ListTile(
-                  title: Text(question.text),
-                  subtitle: Text(
-                    'Category: ${question.category} • Difficulty: ${question.difficulty}',
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showAddEditQuestionDialog(question),
+                margin: const EdgeInsets.only(bottom: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (question.imageUrl != null)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: question.imageUrl!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.error,
+                            size: 48,
+                          ),
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteQuestion(question.id),
+                    ListTile(
+                      title: Text(question.text),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          Text('Category: ${question.category}'),
+                          Text('Difficulty: ${question.difficulty}'),
+                          Text('Tags: ${question.tags.join(", ")}'),
+                        ],
                       ),
-                    ],
-                  ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _showAddEditQuestionDialog(question),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _deleteQuestion(question.id),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Options:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          ...List.generate(
+                            question.options.length,
+                            (i) => ListTile(
+                              dense: true,
+                              leading: Icon(
+                                i == question.correctOptionIndex
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color: i == question.correctOptionIndex
+                                    ? Colors.green
+                                    : null,
+                              ),
+                              title: Text(question.options[i]),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Explanation:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(question.explanation),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -239,23 +330,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   }
 
   Widget _buildCategoriesTab() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return ListView.builder(
-      itemCount: _categories.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text(_categories[index]),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () {
-              // TODO: Implement category deletion
-            },
-          ),
-        );
-      },
+    // TODO: Implement categories management
+    return const Center(
+      child: Text('Categories management coming soon'),
     );
   }
 }
@@ -365,14 +442,14 @@ class _QuestionFormDialogState extends State<QuestionFormDialog> {
               ...List.generate(
                 4,
                 (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _optionControllers[index],
                           decoration: InputDecoration(
-                            labelText: 'Option ${index + 1}',
+                            labelText: 'Option ${String.fromCharCode(65 + index)}',
                             border: const OutlineInputBorder(),
                           ),
                           validator: (value) => value?.isEmpty ?? true
@@ -380,6 +457,7 @@ class _QuestionFormDialogState extends State<QuestionFormDialog> {
                               : null,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Radio<int>(
                         value: index,
                         groupValue: _correctOptionIndex,
@@ -393,7 +471,6 @@ class _QuestionFormDialogState extends State<QuestionFormDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
               TextFormField(
                 controller: _imageUrlController,
                 decoration: const InputDecoration(
@@ -444,12 +521,11 @@ class _QuestionFormDialogState extends State<QuestionFormDialog> {
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _difficulty,
-                items: [1, 2, 3]
-                    .map((level) => DropdownMenuItem(
-                          value: level,
-                          child: Text('Difficulty: $level'),
-                        ))
-                    .toList(),
+                items: [
+                  const DropdownMenuItem(value: 1, child: Text('Easy')),
+                  const DropdownMenuItem(value: 2, child: Text('Medium')),
+                  const DropdownMenuItem(value: 3, child: Text('Hard')),
+                ],
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _difficulty = value);
