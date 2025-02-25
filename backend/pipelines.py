@@ -7,13 +7,21 @@ from haystack.utils import Secret
 
 from backend.custom_components import QuizParser
 
-quiz_generation_template = """Given the following text, create 5 multiple choice quizzes in JSON format.
+quiz_generation_template = """Given the following text, create {{ num_questions }} multiple choice quizzes in JSON format with {{ difficulty }} difficulty level.
+
+{% if difficulty == "easy" %}
+Create straightforward questions that test basic understanding and recall of the main concepts from the text.
+{% elif difficulty == "medium" %}
+Create moderately challenging questions that require understanding relationships between concepts and some analysis.
+{% elif difficulty == "hard" %}
+Create challenging Very hard questions that require deep understanding, critical thinking, knowledge of the subject and the ability to make connections between different parts of the text.
+{% endif %}
+
 Each question should have 4 different options, and only one of them should be correct.
 The options should be unambiguous.
 Each option should begin with a letter followed by a period and a space (e.g., "a. option").
 The question should also briefly mention the general topic of the text so that it can be understood in isolation.
 Each question should not give hints to answer the other questions.
-Include challenging questions, which require reasoning.
 
 respond with JSON only, no markdown or descriptions.
 
@@ -46,7 +54,7 @@ quiz_generation_pipeline.add_component(
         api_key=Secret.from_env_var("GROQ_API_KEY"),
         api_base_url="https://api.groq.com/openai/v1",
         model="llama3-8b-8192",
-        generation_kwargs={"max_tokens": 1000, "temperature": 0.5, "top_p": 1},
+        generation_kwargs={"max_tokens": 2000, "temperature": 0.8, "top_p": 1},
     ),
 )
 quiz_generation_pipeline.add_component("quiz_parser", QuizParser())
