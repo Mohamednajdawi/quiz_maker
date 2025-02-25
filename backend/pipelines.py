@@ -19,7 +19,7 @@ quiz_generation_pipeline.add_component(
     OpenAIGenerator(
         api_key=Secret.from_env_var("GROQ_API_KEY"),
         api_base_url="https://api.groq.com/openai/v1",
-        model="llama3-8b-8192",
+        model="llama-3.1-8b-instant",
         generation_kwargs={"max_tokens": 2000, "temperature": 0.8, "top_p": 1},
     ),
 )
