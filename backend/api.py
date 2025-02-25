@@ -40,6 +40,11 @@ class QuizResponse(BaseModel):
     questions: List[Dict[str, Any]]
 
 
+class TopicResponse(BaseModel):
+    id: int
+    topic: str
+
+
 @app.post("/generate-quiz")
 async def create_quiz(
     request: URLRequest, db: Session = Depends(get_db)
@@ -86,11 +91,11 @@ async def create_quiz(
         )
 
 
-@app.get("/topics", response_model=List[str])
+@app.get("/topics", response_model=List[TopicResponse])
 async def get_topics(db: Session = Depends(get_db)):
     """Get all quiz topics"""
-    topics = db.query(QuizTopic.topic).all()
-    return [topic[0] for topic in topics]
+    topics = db.query(QuizTopic).all()
+    return [{"id": topic.id, "topic": topic.topic} for topic in topics]
 
 
 @app.get("/quiz/{topic_id}", response_model=QuizResponse)
