@@ -55,6 +55,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       // Combine both histories
       final allHistory = [...history, ...urlHistory];
       
+      // Sort history by timestamp first
+      allHistory.sort((a, b) {
+        final aTimestamp = a['timestamp'] is DateTime 
+            ? a['timestamp'] as DateTime
+            : DateTime.parse(a['timestamp'].toString());
+        final bTimestamp = b['timestamp'] is DateTime 
+            ? b['timestamp'] as DateTime
+            : DateTime.parse(b['timestamp'].toString());
+        return aTimestamp.compareTo(bTimestamp); // Oldest to newest for performance chart
+      });
+
       // Calculate analytics data
       final totalQuizzes = allHistory.length;
       int totalScore = 0;
@@ -70,7 +81,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
         
         totalScore += score;
         totalQuestions += total;
-        scores.add(score);
+        scores.add((score / total * 100).round()); // Store percentage scores
         categoryAttempts[category] = (categoryAttempts[category] ?? 0) + 1;
         
         final categoryScore = categoryAccuracy[category] ?? 0;
@@ -83,7 +94,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
             (categoryAttempts[category] ?? 1);
       }
 
-      // Sort history by timestamp
+      // Sort recent history by newest first
       allHistory.sort((a, b) {
         final aTimestamp = a['timestamp'] is DateTime 
             ? a['timestamp'] as DateTime
@@ -91,7 +102,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
         final bTimestamp = b['timestamp'] is DateTime 
             ? b['timestamp'] as DateTime
             : DateTime.parse(b['timestamp'].toString());
-        return bTimestamp.compareTo(aTimestamp); // Most recent first
+        return bTimestamp.compareTo(aTimestamp); // Most recent first for display
       });
 
       setState(() {
@@ -100,7 +111,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
           'averageScore': totalQuizzes > 0 ? (totalScore / totalQuestions) * 100 : 0,
           'categoryAttempts': categoryAttempts,
           'categoryAccuracy': categoryAccuracy,
-          'scores': scores,
+          'scores': scores, // Now contains chronological percentage scores
           'recentHistory': allHistory.take(5).toList(),
         };
         _isLoading = false;
@@ -297,9 +308,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Performance Trend',
-          style: Theme.of(context).textTheme.titleLarge,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Performance Trend',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            if (scores.isNotEmpty) Text(
+              '${scores.last}%',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         SizedBox(
