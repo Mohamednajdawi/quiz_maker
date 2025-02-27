@@ -240,4 +240,41 @@ class QuizService {
       await docRef.get();
     });
   }
+
+  // Get all available quizzes from the backend
+  Future<List<Map<String, dynamic>>> getAllAvailableQuizzes() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/topics'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to fetch quizzes: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching quizzes: $e');
+    }
+  }
+  
+  // Get a specific quiz by topic ID
+  Future<Map<String, dynamic>> getQuizByTopicId(int topicId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/quiz/$topicId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to fetch quiz: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching quiz: $e');
+    }
+  }
 } 

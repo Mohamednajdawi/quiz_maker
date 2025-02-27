@@ -4,6 +4,7 @@ import 'url_quiz_screen.dart';
 import 'quiz_history_screen.dart';
 import 'dart:ui';
 import 'analytics_screen.dart';
+import 'available_quizzes_screen.dart';
 
 class FootballPlayer {
   final String name;
@@ -390,6 +391,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const URLQuizScreen()),
+                      ),
+                    ),
+                    _QuickActionButton(
+                      icon: Icons.quiz_rounded,
+                      label: 'Available',
+                      description: 'Select from quizzes',
+                      gradient: [Colors.green.shade400, Colors.green.shade700],
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AvailableQuizzesScreen()),
                       ),
                     ),
                     _QuickActionButton(
