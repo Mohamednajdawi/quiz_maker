@@ -103,7 +103,11 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
     // Calculate score
     int score = 0;
     for (int i = 0; i < _userAnswers.length; i++) {
-      if (_userAnswers[i] == _selectedQuiz!['questions'][i]['right_option']) {
+      // Convert letter-based right_option to numeric index (a=0, b=1, c=2, d=3)
+      String rightOption = _selectedQuiz!['questions'][i]['right_option'];
+      int correctIndex = rightOption.codeUnitAt(0) - 'a'.codeUnitAt(0);
+      
+      if (_userAnswers[i] == correctIndex) {
         score++;
       }
     }
@@ -427,7 +431,11 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
     // Calculate score
     int score = 0;
     for (int i = 0; i < _userAnswers.length; i++) {
-      if (_userAnswers[i] == _selectedQuiz!['questions'][i]['right_option']) {
+      // Convert letter-based right_option to numeric index (a=0, b=1, c=2, d=3)
+      String rightOption = _selectedQuiz!['questions'][i]['right_option'];
+      int correctIndex = rightOption.codeUnitAt(0) - 'a'.codeUnitAt(0);
+      
+      if (_userAnswers[i] == correctIndex) {
         score++;
       }
     }
