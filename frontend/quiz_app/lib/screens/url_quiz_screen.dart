@@ -25,6 +25,13 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
   List<int> _userAnswers = [];
   bool _showResults = false;
   DateTime? _startTime;
+  
+  // Added state variables for difficulty and number of questions
+  String _selectedDifficulty = 'medium';
+  int _numQuestions = 5;
+  
+  // List of available difficulty levels
+  final List<String> _difficultyLevels = ['easy', 'medium', 'hard'];
 
   @override
   void initState() {
@@ -49,7 +56,11 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
     });
 
     try {
-      final quiz = await _quizService.generateQuiz(_urlController.text);
+      final quiz = await _quizService.generateQuiz(
+        _urlController.text,
+        numQuestions: _numQuestions,
+        difficulty: _selectedDifficulty,
+      );
       setState(() {
         _quizData = quiz;
         _isLoading = false;
@@ -114,6 +125,8 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
         quizData: {
           ..._quizData!,
           'url': _urlController.text,
+          'difficulty': _selectedDifficulty,
+          'num_questions': _numQuestions,
         },
         userAnswers: _userAnswers,
         score: score,
@@ -225,6 +238,62 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
                           prefixIcon: const Icon(Icons.link),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      
+                      // Difficulty dropdown
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Difficulty',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.trending_up),
+                        ),
+                        value: _selectedDifficulty,
+                        items: _difficultyLevels.map((String difficulty) {
+                          return DropdownMenuItem<String>(
+                            value: difficulty,
+                            child: Text(
+                              difficulty[0].toUpperCase() + difficulty.substring(1),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedDifficulty = newValue;
+                            });
+                          }
+                        },
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Number of questions slider
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              'Number of Questions: $_numQuestions',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Slider(
+                            value: _numQuestions.toDouble(),
+                            min: 1,
+                            max: 20,
+                            divisions: 19,
+                            label: _numQuestions.toString(),
+                            onChanged: (double value) {
+                              setState(() {
+                                _numQuestions = value.round();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _isLoading ? null : _generateQuiz,

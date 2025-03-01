@@ -145,12 +145,16 @@ class QuizService {
   }
 
   // Generate quiz from URL
-  Future<Map<String, dynamic>> generateQuiz(String url) async {
+  Future<Map<String, dynamic>> generateQuiz(String url, {int numQuestions = 5, String difficulty = 'medium'}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/generate-quiz'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'url': url}),
+        body: jsonEncode({
+          'url': url,
+          'num_questions': numQuestions,
+          'difficulty': difficulty,
+        }),
       );
 
       if (response.statusCode == 200) {
