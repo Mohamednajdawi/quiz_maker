@@ -4,10 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class URLQuizScreen extends StatefulWidget {
   final String? initialUrl;
+  final String? initialDifficulty;
+  final int? initialNumQuestions;
   
   const URLQuizScreen({
     super.key,
     this.initialUrl,
+    this.initialDifficulty,
+    this.initialNumQuestions,
   });
 
   @override
@@ -36,6 +40,12 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDifficulty != null) {
+      _selectedDifficulty = widget.initialDifficulty!;
+    }
+    if (widget.initialNumQuestions != null) {
+      _numQuestions = widget.initialNumQuestions!;
+    }
     if (widget.initialUrl != null) {
       _urlController.text = widget.initialUrl!;
       _generateQuiz();

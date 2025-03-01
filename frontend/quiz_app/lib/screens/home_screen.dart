@@ -103,13 +103,111 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _onPlayerSelected(FootballPlayer? player) {
     setState(() => _selectedPlayer = player);
     if (player != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => URLQuizScreen(initialUrl: player.url),
-        ),
-      );
+      _showQuizOptionsDialog(player);
     }
+  }
+
+  void _showQuizOptionsDialog(FootballPlayer player) {
+    String selectedDifficulty = 'medium';
+    int numQuestions = 5;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Quiz Options for ${player.name}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Difficulty:'),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      value: selectedDifficulty,
+                      items: ['easy', 'medium', 'hard'].map((String difficulty) {
+                        return DropdownMenuItem<String>(
+                          value: difficulty,
+                          child: Text(
+                            difficulty[0].toUpperCase() + difficulty.substring(1),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedDifficulty = newValue;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Number of Questions:'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Slider(
+                            value: numQuestions.toDouble(),
+                            min: 1,
+                            max: 20,
+                            divisions: 19,
+                            label: numQuestions.toString(),
+                            onChanged: (double value) {
+                              setState(() {
+                                numQuestions = value.round();
+                              });
+                            },
+                          ),
+                        ),
+                        Container(
+                          width: 40,
+                          alignment: Alignment.center,
+                          child: Text(
+                            numQuestions.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => URLQuizScreen(
+                          initialUrl: player.url,
+                          initialDifficulty: selectedDifficulty,
+                          initialNumQuestions: numQuestions,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Generate Quiz'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
