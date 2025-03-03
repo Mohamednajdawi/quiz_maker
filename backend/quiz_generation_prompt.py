@@ -14,10 +14,49 @@ Each option should begin with a letter followed by a period and a space (e.g., "
 The question should also briefly mention the general topic of the text so that it can be understood in isolation.
 Each question should not give hints to answer the other questions.
 
+Categorize the quiz content by selecting the most appropriate category and subcategory from this list:
+
+1. General Knowledge
+• History & Politics
+• Science & Technology
+• World Cultures & Traditions
+
+2. Entertainment
+• Movies & TV Shows
+• Music & Concerts
+• Celebrity Trivia
+
+3. Sports
+• Team Sports (e.g. Soccer, Football, Basketball)
+• Individual Sports (e.g. Tennis, Golf, Athletics)
+• Extreme/Adventure Sports
+
+4. History
+• Ancient Civilizations
+• Medieval & Renaissance
+• Modern & Contemporary Events
+
+5. Science & Nature
+• Biology & Ecology
+• Chemistry & Physics
+• Space & Astronomy
+
+6. Geography
+• World Capitals & Countries
+• Physical Geography (mountains, rivers, oceans)
+• Famous Landmarks & Natural Wonders
+
+7. Pop Culture & Media
+• Social Media Trends & Viral Memes
+• Internet Culture & Viral Challenges
+• Celebrity Gossip & Reality TV
+
 respond with JSON only, no markdown or descriptions.
 
 example JSON format you should absolutely follow:
 {"topic": "a title fits the topic of the text",
+ "category": "one of the main categories from the list",
+ "subcategory": "the appropriate subcategory from the list",
  "questions":
   [
     {

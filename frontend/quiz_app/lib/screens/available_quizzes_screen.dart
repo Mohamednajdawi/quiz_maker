@@ -14,6 +14,9 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
   final _quizService = QuizService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _availableQuizzes = [];
+  Map<String, List<String>> _categories = {};
+  String? _selectedCategory;
+  String? _selectedSubcategory;
   String? _error;
   Map<String, dynamic>? _selectedQuiz;
   bool _loadingQuiz = false;
@@ -27,6 +30,20 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
   void initState() {
     super.initState();
     _fetchAvailableQuizzes();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final categories = await _quizService.getCategoriesAndSubcategories();
+      setState(() {
+        _categories = categories;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    }
   }
 
   Future<void> _fetchAvailableQuizzes() async {
@@ -47,6 +64,23 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  List<Map<String, dynamic>> _getFilteredQuizzes() {
+    if (_selectedCategory == null) {
+      return _availableQuizzes;
+    }
+    
+    if (_selectedSubcategory == null) {
+      return _availableQuizzes.where((quiz) => 
+        quiz['category'] == _selectedCategory
+      ).toList();
+    }
+    
+    return _availableQuizzes.where((quiz) => 
+      quiz['category'] == _selectedCategory && 
+      quiz['subcategory'] == _selectedSubcategory
+    ).toList();
   }
 
   Future<void> _loadQuiz(int topicId) async {
@@ -123,7 +157,9 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
       try {
         await _quizService.saveQuizResult(
           userId: userId,
-          category: _selectedQuiz!['topic'],
+          topic: _selectedQuiz!['topic'],
+          category: _selectedQuiz!['category'],
+          subcategory: _selectedQuiz!['subcategory'],
           score: score,
           totalQuestions: _userAnswers.length,
           timeTaken: Duration(milliseconds: _stopwatch.elapsedMilliseconds),
@@ -146,100 +182,175 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Available Quizzes'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Available Quizzes'),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Error: $_error',
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _fetchAvailableQuizzes,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     if (_selectedQuiz != null) {
       // Show quiz questions
       return _buildQuizScreen();
     }
 
-    // Show list of available quizzes
     return Scaffold(
       appBar: AppBar(
         title: const Text('Available Quizzes'),
+        backgroundColor: Colors.deepPurple,
       ),
-      body: _availableQuizzes.isEmpty
-          ? const Center(
-              child: Text(
-                'No quizzes available yet.\nGenerate a quiz from a URL first!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _availableQuizzes.length,
-              itemBuilder: (context, index) {
-                final quiz = _availableQuizzes[index];
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: InkWell(
-                    onTap: () => _loadQuiz(quiz['id']),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Error: $_error'),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _fetchAvailableQuizzes,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    // Category and subcategory filters
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            quiz['topic'],
-                            style: const TextStyle(
-                              fontSize: 18,
+                          const Text(
+                            'Filter by Category:',
+                            style: TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Quiz ID: ${quiz['id']}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Category',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  value: _selectedCategory,
+                                  items: [
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text('All Categories'),
+                                    ),
+                                    ..._categories.keys.map((category) {
+                                      return DropdownMenuItem<String>(
+                                        value: category,
+                                        child: Text(category),
+                                      );
+                                    }).toList(),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCategory = value;
+                                      _selectedSubcategory = null;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Subcategory',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  value: _selectedSubcategory,
+                                  items: [
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text('All Subcategories'),
+                                    ),
+                                    ...(_selectedCategory != null
+                                        ? _categories[_selectedCategory]!.map((subcategory) {
+                                            return DropdownMenuItem<String>(
+                                              value: subcategory,
+                                              child: Text(subcategory),
+                                            );
+                                          }).toList()
+                                        : []),
+                                  ],
+                                  onChanged: _selectedCategory == null
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _selectedSubcategory = value;
+                                          });
+                                        },
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _fetchAvailableQuizzes,
-        child: const Icon(Icons.refresh),
-      ),
+                    
+                    // Quiz list
+                    Expanded(
+                      child: _getFilteredQuizzes().isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No quizzes available for the selected filters',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _getFilteredQuizzes().length,
+                              itemBuilder: (context, index) {
+                                final quiz = _getFilteredQuizzes()[index];
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () => _loadQuiz(quiz['id']),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            quiz['topic'],
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Chip(
+                                                label: Text(quiz['category']),
+                                                backgroundColor: Colors.deepPurple.shade100,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Chip(
+                                                label: Text(quiz['subcategory']),
+                                                backgroundColor: Colors.deepPurple.shade50,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
     );
   }
 

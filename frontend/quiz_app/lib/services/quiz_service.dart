@@ -197,6 +197,8 @@ class QuizService {
       final quizDoc = await _firestore.collection('url_quizzes').add({
         'userId': userId,
         'topic': quizData['topic'] ?? 'URL Quiz',
+        'category': quizData['category'] ?? 'General Knowledge',
+        'subcategory': quizData['subcategory'] ?? 'Miscellaneous',
         'questions': quizData['questions'],
         'userAnswers': userAnswers,
         'score': score,
@@ -210,7 +212,9 @@ class QuizService {
 
       final resultDoc = await _firestore.collection('results').add({
         'userId': userId,
-        'category': quizData['topic'] ?? 'URL Quiz',
+        'category': quizData['category'] ?? 'General Knowledge',
+        'subcategory': quizData['subcategory'] ?? 'Miscellaneous',
+        'topic': quizData['topic'] ?? 'URL Quiz',
         'score': score,
         'totalQuestions': quizData['questions'].length,
         'timeTaken': timeTaken.inSeconds,
@@ -226,7 +230,9 @@ class QuizService {
   // Save quiz result
   Future<void> saveQuizResult({
     required String userId,
+    required String topic,
     required String category,
+    required String subcategory,
     required int score,
     required int totalQuestions,
     required Duration timeTaken,
@@ -234,7 +240,9 @@ class QuizService {
     return _withRetry(() async {
       final docRef = await _firestore.collection('results').add({
         'userId': userId,
+        'topic': topic,
         'category': category,
+        'subcategory': subcategory,
         'score': score,
         'totalQuestions': totalQuestions,
         'timeTaken': timeTaken.inSeconds,
@@ -279,6 +287,31 @@ class QuizService {
       }
     } catch (e) {
       throw Exception('Error fetching quiz: $e');
+    }
+  }
+  
+  // Get all categories and subcategories from the backend
+  Future<Map<String, List<String>>> getCategoriesAndSubcategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        Map<String, List<String>> result = {};
+        
+        data.forEach((key, value) {
+          result[key] = List<String>.from(value);
+        });
+        
+        return result;
+      } else {
+        throw Exception('Failed to fetch categories: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching categories: $e');
     }
   }
 } 

@@ -37,12 +37,16 @@ class URLRequest(BaseModel):
 
 class QuizResponse(BaseModel):
     topic: str
+    category: str
+    subcategory: str
     questions: List[Dict[str, Any]]
 
 
 class TopicResponse(BaseModel):
     id: int
     topic: str
+    category: str
+    subcategory: str
 
 
 @app.post("/generate-quiz")
@@ -63,7 +67,11 @@ async def create_quiz(
         quiz = generate_quiz(url, request.num_questions, request.difficulty)
 
         # Store quiz in database
-        quiz_topic = QuizTopic(topic=quiz["topic"])
+        quiz_topic = QuizTopic(
+            topic=quiz["topic"],
+            category=quiz["category"],
+            subcategory=quiz["subcategory"],
+        )
         db.add(quiz_topic)
         db.flush()  # Get the ID of the newly created topic
 
@@ -95,7 +103,15 @@ async def create_quiz(
 async def get_topics(db: Session = Depends(get_db)):
     """Get all quiz topics"""
     topics = db.query(QuizTopic).all()
-    return [{"id": topic.id, "topic": topic.topic} for topic in topics]
+    return [
+        {
+            "id": topic.id,
+            "topic": topic.topic,
+            "category": topic.category,
+            "subcategory": topic.subcategory,
+        }
+        for topic in topics
+    ]
 
 
 @app.get("/quiz/{topic_id}", response_model=QuizResponse)
@@ -108,6 +124,8 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)):
     questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == topic_id).all()
     return {
         "topic": topic.topic,
+        "category": topic.category,
+        "subcategory": topic.subcategory,
         "questions": [
             {
                 "question": q.question,
@@ -117,6 +135,22 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)):
             for q in questions
         ],
     }
+
+
+@app.get("/categories")
+async def get_categories(db: Session = Depends(get_db)):
+    """Get all unique categories with their subcategories"""
+    categories = {}
+    topics = db.query(QuizTopic).all()
+
+    for topic in topics:
+        if topic.category not in categories:
+            categories[topic.category] = []
+
+        if topic.subcategory not in categories[topic.category]:
+            categories[topic.category].append(topic.subcategory)
+
+    return categories
 
 
 @app.get("/health")
