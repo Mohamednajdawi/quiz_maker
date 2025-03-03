@@ -41,3 +41,17 @@ You can also run the entire application using Docker Compose:
    ```bash
    docker-compose down
    ```
+
+
+delete all questions
+
+```bash
+python -c "import sqlite3; conn = sqlite3.connect('quiz_database.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM quiz_questions'); question_count = cursor.fetchone()[0]; cursor.execute('SELECT COUNT(*) FROM quiz_topics'); topic_count = cursor.fetchone()[0]; print(f'Found {question_count} questions and {topic_count} topics in the database.'); cursor.execute('DELETE FROM quiz_questions'); cursor.execute('DELETE FROM quiz_topics'); conn.commit(); print('Successfully deleted all quizzes from the database.'); conn.close()"
+```
+
+
+check the count of questions and topics
+```bash
+python -c "import sqlite3; conn = sqlite3.connect('quiz_database.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM quiz_questions'); print(f'Questions count: {cursor.fetchone()[0]}'); cursor.execute('SELECT COUNT(*) FROM quiz_topics'); print(f'Topics count: {cursor.fetchone()[0]}'); conn.close()"
+```
+
