@@ -29,6 +29,7 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
   List<int> _userAnswers = [];
   bool _showResults = false;
   DateTime? _startTime;
+  bool _showMoreDetails = false;
   
   // Modified to handle both web and native platforms
   dynamic _selectedPDFFile;
@@ -766,6 +767,188 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
             ),
           ),
           
+          const SizedBox(height: 16),
+          
+          // Show More Details Button
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() {
+                _showMoreDetails = !_showMoreDetails;
+              });
+            },
+            icon: Icon(_showMoreDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+            label: Text(_showMoreDetails ? 'Hide Details' : 'Show More Details'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          
+          // Detailed Question Analysis
+          if (_showMoreDetails) ...[
+            const SizedBox(height: 16),
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Question Analysis',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...List.generate(
+                      _quizData!['questions'].length,
+                      (index) {
+                        final question = _quizData!['questions'][index];
+                        final userAnswer = _userAnswers[index];
+                        final correctAnswerLetter = question['right_option'];
+                        final correctAnswerIndex = correctAnswerLetter.codeUnitAt(0) - 'a'.codeUnitAt(0);
+                        final isCorrect = userAnswer == correctAnswerIndex;
+                        
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isCorrect ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isCorrect ? Colors.green.shade300 : Colors.red.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isCorrect ? Colors.green.shade100 : Colors.red.shade100,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      question['question'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    isCorrect ? Icons.check_circle : Icons.cancel,
+                                    color: isCorrect ? Colors.green : Colors.red,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Your answer:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isCorrect ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      userAnswer == -1 ? 'Not answered' : '${String.fromCharCode('A'.codeUnitAt(0) + userAnswer)}. ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: userAnswer == -1 ? Colors.grey.shade700 : (isCorrect ? Colors.green.shade800 : Colors.red.shade800),
+                                      ),
+                                    ),
+                                    if (userAnswer != -1) ...[
+                                      Expanded(
+                                        child: Text(
+                                          question['options'][userAnswer],
+                                          style: TextStyle(
+                                            color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              if (!isCorrect) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Correct answer:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '${correctAnswerLetter.toUpperCase()}. ',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green.shade800,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          question['options'][correctAnswerIndex],
+                                          style: TextStyle(
+                                            color: Colors.green.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          
           const SizedBox(height: 24),
           
           // Action Buttons
@@ -799,6 +982,7 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
                 _selectedFileName = null;
                 _error = null;
                 _showResults = false;
+                _showMoreDetails = false;
               });
             },
             icon: const Icon(Icons.refresh_rounded),
