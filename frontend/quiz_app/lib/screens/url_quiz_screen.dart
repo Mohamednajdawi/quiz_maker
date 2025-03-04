@@ -29,6 +29,7 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
   List<int> _userAnswers = [];
   bool _showResults = false;
   DateTime? _startTime;
+  bool _showMoreDetails = false;
   
   // Added state variables for difficulty and number of questions
   String _selectedDifficulty = 'medium';
@@ -380,145 +381,507 @@ class _URLQuizScreenState extends State<URLQuizScreen> {
               if (_showResults && _quizData != null) ...[
                 const SizedBox(height: 24),
                 Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Quiz Results',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 16),
+                        // Link Quiz Title
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _calculateScore() == _quizData!['questions'].length
-                                  ? Icons.star
-                                  : Icons.star_half,
-                              color: Colors.amber,
-                              size: 32,
+                              Icons.link_rounded,
+                              color: Colors.blue.shade700,
+                              size: 28,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Score: ${_calculateScore()} out of ${_quizData!['questions'].length}',
-                              style: Theme.of(context).textTheme.titleLarge,
+                            const Text(
+                              'Link Quiz Results',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Detailed Summary:',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        
+                        // URL
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Text(
+                            _urlController.text,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade800,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        ...List.generate(
-                          _quizData!['questions'].length,
-                          (index) => Card(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            color: _isAnswerCorrect(index)
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.red.withOpacity(0.1),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        _isAnswerCorrect(index)
-                                            ? Icons.check_circle
-                                            : Icons.cancel,
-                                        color: _isAnswerCorrect(index)
-                                            ? Colors.green
-                                            : Colors.red,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Question ${index + 1}',
-                                          style: Theme.of(context).textTheme.titleMedium,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _quizData!['questions'][index]['question'] ?? 'Question not available',
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Your answer: ${_getFullOptionText(index, _userAnswers[index])}',
-                                    style: TextStyle(
-                                      color: _isAnswerCorrect(index)
-                                          ? Colors.green
-                                          : Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  if (!_isAnswerCorrect(index)) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Correct answer: ${_getFullOptionText(index, _letterToIndex(_quizData!['questions'][index]['right_option']))}',
-                                      style: const TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                  if (_quizData!['questions'][index]['explanation'] != null) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Explanation:',
-                                      style: Theme.of(context).textTheme.titleSmall,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _quizData!['questions'][index]['explanation'],
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ],
-                                ],
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Score Circle
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: _calculateScorePercentage() >= 70
+                                  ? [Colors.green.shade300, Colors.green.shade700]
+                                  : _calculateScorePercentage() >= 40
+                                      ? [Colors.orange.shade300, Colors.orange.shade700]
+                                      : [Colors.red.shade300, Colors.red.shade700],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _calculateScorePercentage() >= 70
+                                    ? Colors.green.shade200
+                                    : _calculateScorePercentage() >= 40
+                                        ? Colors.orange.shade200
+                                        : Colors.red.shade200,
+                                blurRadius: 12,
+                                spreadRadius: 2,
                               ),
+                            ],
+                          ),
+                          child: Text(
+                            '${_calculateScore()}/${_quizData!['questions'].length}',
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Percentage
+                        Text(
+                          '${_calculateScorePercentage().toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Performance Text
+                        Text(
+                          _calculateScorePercentage() >= 70
+                              ? 'Excellent!'
+                              : _calculateScorePercentage() >= 40
+                                  ? 'Good effort!'
+                                  : 'Keep practicing!',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: _calculateScorePercentage() >= 70
+                                ? Colors.green.shade700
+                                : _calculateScorePercentage() >= 40
+                                    ? Colors.orange.shade700
+                                    : Colors.red.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        
                         const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _quizData = null;
-                                  _userAnswers = [];
-                                  _showResults = false;
-                                  _urlController.clear();
-                                });
-                              },
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Start New Quiz'),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              icon: const Icon(Icons.home),
-                              label: const Text('Back to Home'),
-                            ),
-                          ],
+                        
+                        // Time Taken
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.timer_outlined, size: 20, color: Colors.grey.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Time: ${(_stopwatch.elapsed.inMinutes).toString().padLeft(2, '0')}:${(_stopwatch.elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
+                
+                const SizedBox(height: 16),
+                
+                // Quiz Summary Card
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Quiz Summary',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSummaryItem(
+                          icon: Icons.category_outlined,
+                          label: 'Category',
+                          value: _quizData!['category'] ?? 'Web Content',
+                        ),
+                        _buildSummaryItem(
+                          icon: Icons.topic_outlined,
+                          label: 'Topic',
+                          value: _quizData!['topic'] ?? 'URL Quiz',
+                        ),
+                        _buildSummaryItem(
+                          icon: Icons.quiz_outlined,
+                          label: 'Questions',
+                          value: _quizData!['questions'].length.toString(),
+                        ),
+                        _buildSummaryItem(
+                          icon: Icons.check_circle_outline,
+                          label: 'Correct Answers',
+                          value: _calculateScore().toString(),
+                        ),
+                        _buildSummaryItem(
+                          icon: Icons.percent_outlined,
+                          label: 'Accuracy',
+                          value: '${_calculateScorePercentage().toStringAsFixed(1)}%',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Show More Details Button
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showMoreDetails = !_showMoreDetails;
+                    });
+                  },
+                  icon: Icon(_showMoreDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+                  label: Text(_showMoreDetails ? 'Hide Details' : 'Show More Details'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                
+                // Detailed Question Analysis
+                if (_showMoreDetails) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Question Analysis',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ...List.generate(
+                            _quizData!['questions'].length,
+                            (index) {
+                              final question = _quizData!['questions'][index];
+                              final userAnswer = _userAnswers[index];
+                              final correctAnswerLetter = question['right_option'];
+                              final correctAnswerIndex = _letterToIndex(correctAnswerLetter);
+                              final isCorrect = userAnswer == correctAnswerIndex;
+                              
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isCorrect ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isCorrect ? Colors.green.shade300 : Colors.red.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: isCorrect ? Colors.green.shade100 : Colors.red.shade100,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            question['question'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          isCorrect ? Icons.check_circle : Icons.cancel,
+                                          color: isCorrect ? Colors.green : Colors.red,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Divider(height: 1),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Your answer:',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isCorrect ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            userAnswer == -1 ? 'Not answered' : '${String.fromCharCode('A'.codeUnitAt(0) + userAnswer)}. ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: userAnswer == -1 ? Colors.grey.shade700 : (isCorrect ? Colors.green.shade800 : Colors.red.shade800),
+                                            ),
+                                          ),
+                                          if (userAnswer != -1) ...[
+                                            Expanded(
+                                              child: Text(
+                                                _getOptionText(index, userAnswer),
+                                                style: TextStyle(
+                                                  color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    if (!isCorrect) ...[
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Correct answer:',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              '${correctAnswerLetter.toUpperCase()}. ',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green.shade800,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                _getOptionText(index, correctAnswerIndex),
+                                                style: TextStyle(
+                                                  color: Colors.green.shade800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    if (question['explanation'] != null) ...[
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Explanation:',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade700,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.blue.shade200,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          question['explanation'],
+                                          style: TextStyle(
+                                            color: Colors.blue.shade800,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 24),
+                
+                // Action Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _quizData = null;
+                            _userAnswers = [];
+                            _showResults = false;
+                            _showMoreDetails = false;
+                            _urlController.clear();
+                          });
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Start New Quiz'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.home),
+                        label: const Text('Back to Home'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+  
+  // Helper method to calculate score percentage
+  double _calculateScorePercentage() {
+    if (_quizData == null || _quizData!['questions'].isEmpty) return 0;
+    return (_calculateScore() / _quizData!['questions'].length) * 100;
+  }
+  
+  // Helper method to build summary items
+  Widget _buildSummaryItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade600),
+          const SizedBox(width: 12),
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
       ),
     );
   }
