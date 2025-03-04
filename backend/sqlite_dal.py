@@ -8,7 +8,9 @@ class QuizTopic(Base):
     __tablename__ = "quiz_topics"
 
     id = Column(Integer, primary_key=True)
-    topic = Column(String, unique=True, nullable=False)
+    topic = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    subcategory = Column(String, nullable=False)
     questions = relationship("QuizQuestion", back_populates="topic")
 
 

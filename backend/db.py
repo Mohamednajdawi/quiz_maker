@@ -1,10 +1,15 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from backend.sqlite_dal import Base
 
-# Create SQLite engine
-engine = create_engine("sqlite:///quiz_database.db")
+# Get the absolute path to the database file
+db_path = os.path.abspath("quiz_database.db")
+
+# Create SQLite engine with absolute path
+engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
 
 # Create all tables
 Base.metadata.create_all(engine)
