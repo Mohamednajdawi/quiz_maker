@@ -296,9 +296,15 @@ class QuizService {
     required Duration timeTaken,
   }) async {
     return _withRetry(() async {
+      // Determine the quiz type (url or pdf)
+      final String quizType = quizData['sourceType'] == 'pdf' ? 'pdf' : 'url';
+      final String sourceInfo = quizType == 'pdf' 
+          ? (quizData['sourceFileName'] ?? 'Unknown PDF')
+          : (quizData['url'] ?? '');
+      
       final quizDoc = await _firestore.collection('url_quizzes').add({
         'userId': userId,
-        'topic': quizData['topic'] ?? 'URL Quiz',
+        'topic': quizData['topic'] ?? (quizType == 'pdf' ? 'PDF Quiz' : 'URL Quiz'),
         'category': quizData['category'] ?? 'General Knowledge',
         'subcategory': quizData['subcategory'] ?? 'Miscellaneous',
         'questions': quizData['questions'],
@@ -307,7 +313,8 @@ class QuizService {
         'totalQuestions': quizData['questions'].length,
         'timeTaken': timeTaken.inSeconds,
         'timestamp': FieldValue.serverTimestamp(),
-        'sourceUrl': quizData['url'] ?? '',
+        'sourceType': quizType,
+        'sourceInfo': sourceInfo,
       });
 
       await quizDoc.get();
@@ -316,13 +323,13 @@ class QuizService {
         'userId': userId,
         'category': quizData['category'] ?? 'General Knowledge',
         'subcategory': quizData['subcategory'] ?? 'Miscellaneous',
-        'topic': quizData['topic'] ?? 'URL Quiz',
+        'topic': quizData['topic'] ?? (quizType == 'pdf' ? 'PDF Quiz' : 'URL Quiz'),
         'score': score,
         'totalQuestions': quizData['questions'].length,
         'timeTaken': timeTaken.inSeconds,
         'timestamp': FieldValue.serverTimestamp(),
         'quizRef': quizDoc.id,
-        'type': 'url',
+        'type': quizType,
       });
 
       await resultDoc.get();

@@ -87,7 +87,35 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                   ],
                 ),
                 const Divider(),
-                if (quiz['sourceUrl'] != null) ...[
+                if (quiz['sourceType'] == 'pdf' && quiz['sourceInfo'] != null) ...[
+                  Text(
+                    'PDF File:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          quiz['sourceInfo'],
+                          style: const TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ] else if (quiz['sourceType'] == 'url' && quiz['sourceInfo'] != null) ...[
+                  Text(
+                    'Source URL:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(quiz['sourceInfo']),
+                  const SizedBox(height: 16),
+                ] else if (quiz['sourceUrl'] != null) ...[
+                  // Legacy support for older quiz records
                   Text(
                     'Source URL:',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -256,6 +284,20 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                           final timeTaken = Duration(seconds: quiz['timeTaken'] as int);
                           final timestamp = quiz['timestamp'] as DateTime;
                           final isUrlQuiz = quiz['questions'] != null;
+                          
+                          // Determine quiz type icon
+                          IconData quizTypeIcon;
+                          Color quizTypeColor;
+                          if (quiz['type'] == 'pdf' || quiz['sourceType'] == 'pdf') {
+                            quizTypeIcon = Icons.picture_as_pdf_rounded;
+                            quizTypeColor = Colors.red.shade700;
+                          } else if (quiz['type'] == 'url' || quiz['sourceType'] == 'url' || quiz['sourceUrl'] != null) {
+                            quizTypeIcon = Icons.link_rounded;
+                            quizTypeColor = Colors.blue.shade700;
+                          } else {
+                            quizTypeIcon = Icons.quiz_rounded;
+                            quizTypeColor = Colors.purple.shade700;
+                          }
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -283,8 +325,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                                             style: Theme.of(context).textTheme.titleMedium,
                                           ),
                                         ),
-                                        if (isUrlQuiz)
-                                          const Icon(Icons.link, size: 16),
+                                        Icon(quizTypeIcon, size: 20, color: quizTypeColor),
                                       ],
                                     ),
                                     const SizedBox(height: 8),

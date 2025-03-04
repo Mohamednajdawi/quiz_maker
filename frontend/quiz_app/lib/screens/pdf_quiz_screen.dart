@@ -155,18 +155,39 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && _quizData != null) {
+        // Save as PDF quiz result
         await _quizService.saveURLQuizResult(
           userId: user.uid,
-          quizData: _quizData!,
+          quizData: {
+            ..._quizData!,
+            'topic': _quizData!['topic'] ?? 'PDF Quiz',
+            'category': _quizData!['category'] ?? 'PDF Content',
+            'subcategory': _quizData!['subcategory'] ?? 'Generated Quiz',
+            'sourceType': 'pdf',
+            'sourceFileName': _selectedFileName ?? 'Unknown PDF'
+          },
           userAnswers: _userAnswers,
           score: _calculateScore(),
           timeTaken: _stopwatch.elapsed,
         );
+        
+        // Show a success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Quiz results saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving result: $e')),
+          SnackBar(
+            content: Text('Error saving result: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -542,6 +563,7 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Results Header Card
           Card(
             elevation: 4,
             shape: RoundedRectangleBorder(
@@ -551,46 +573,101 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  const Text(
-                    'Quiz Results',
-                    style: TextStyle(
+                  // PDF Quiz Title
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: Colors.red.shade700,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'PDF Quiz Results',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // PDF Filename
+                  if (_selectedFileName != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        _selectedFileName!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Score Circle
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: percentage >= 70
+                            ? [Colors.green.shade300, Colors.green.shade700]
+                            : percentage >= 40
+                                ? [Colors.orange.shade300, Colors.orange.shade700]
+                                : [Colors.red.shade300, Colors.red.shade700],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: percentage >= 70
+                              ? Colors.green.shade200
+                              : percentage >= 40
+                                  ? Colors.orange.shade200
+                                  : Colors.red.shade200,
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$score/$totalQuestions',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Percentage
+                  Text(
+                    '${percentage.toStringAsFixed(0)}%',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: percentage >= 70
-                          ? Colors.green.shade100
-                          : percentage >= 40
-                              ? Colors.orange.shade100
-                              : Colors.red.shade100,
-                    ),
-                    child: Text(
-                      '$score/$totalQuestions',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: percentage >= 70
-                            ? Colors.green.shade800
-                            : percentage >= 40
-                                ? Colors.orange.shade800
-                                : Colors.red.shade800,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${percentage.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  
                   const SizedBox(height: 8),
+                  
+                  // Performance Text
                   Text(
                     percentage >= 70
                         ? 'Excellent!'
@@ -598,24 +675,91 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
                             ? 'Good effort!'
                             : 'Keep practicing!',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade700,
+                      fontSize: 18,
+                      color: percentage >= 70
+                          ? Colors.green.shade700
+                          : percentage >= 40
+                              ? Colors.orange.shade700
+                              : Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.timer_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Time: ${(_stopwatch.elapsed.inMinutes).toString().padLeft(2, '0')}:${(_stopwatch.elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade700,
+                  
+                  // Time Taken
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.timer_outlined, size: 20, color: Colors.grey.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Time: ${(_stopwatch.elapsed.inMinutes).toString().padLeft(2, '0')}:${(_stopwatch.elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade800,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Quiz Summary Card
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Quiz Summary',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSummaryItem(
+                    icon: Icons.category_outlined,
+                    label: 'Category',
+                    value: _quizData!['category'] ?? 'PDF Content',
+                  ),
+                  _buildSummaryItem(
+                    icon: Icons.topic_outlined,
+                    label: 'Topic',
+                    value: _quizData!['topic'] ?? 'PDF Quiz',
+                  ),
+                  _buildSummaryItem(
+                    icon: Icons.quiz_outlined,
+                    label: 'Questions',
+                    value: totalQuestions.toString(),
+                  ),
+                  _buildSummaryItem(
+                    icon: Icons.check_circle_outline,
+                    label: 'Correct Answers',
+                    value: score.toString(),
+                  ),
+                  _buildSummaryItem(
+                    icon: Icons.percent_outlined,
+                    label: 'Accuracy',
+                    value: '${percentage.toStringAsFixed(1)}%',
                   ),
                 ],
               ),
@@ -624,22 +768,30 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
           
           const SizedBox(height: 24),
           
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Back to Home'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: const Text('Back to Home'),
+            ],
           ),
           
           const SizedBox(height: 16),
           
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: () {
               setState(() {
                 _quizData = null;
@@ -649,13 +801,51 @@ class _PDFQuizScreenState extends State<PDFQuizScreen> {
                 _showResults = false;
               });
             },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Create Another Quiz'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Create Another Quiz'),
+          ),
+          
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+  
+  // Helper method to build summary items
+  Widget _buildSummaryItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade600),
+          const SizedBox(width: 12),
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.end,
+            ),
           ),
         ],
       ),
