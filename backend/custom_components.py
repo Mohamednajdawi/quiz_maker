@@ -1,9 +1,11 @@
+import json
+import os
 from typing import Dict, List
 
-from haystack import component
-
-import json
 import json_repair
+from haystack import component
+from pypdf import PdfReader
+
 
 @component
 class QuizParser:
@@ -30,3 +32,29 @@ class QuizParser:
         print(quiz)
 
         return {"quiz": quiz}
+
+@component
+class PDFTextExtractor:
+    @component.output_types(text=str, filename=str)
+    def run(self, file_path: str):
+        """
+        Extract text from a PDF file.
+        
+        Args:
+            file_path: Path to the PDF file
+            
+        Returns:
+            dict: A dictionary containing the extracted text and the filename
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"PDF file not found: {file_path}")
+            
+        reader = PdfReader(file_path)
+        text = ""
+        
+        for page in reader.pages:
+            text += page.extract_text() + "\n\n"
+            
+        filename = os.path.basename(file_path)
+        
+        return {"text": text, "filename": filename}

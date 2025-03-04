@@ -5,6 +5,7 @@ import 'quiz_history_screen.dart';
 import 'dart:ui';
 import 'analytics_screen.dart';
 import 'available_quizzes_screen.dart';
+import 'pdf_quiz_screen.dart';
 
 class FootballPlayer {
   final String name;
@@ -492,6 +493,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     _QuickActionButton(
+                      icon: Icons.picture_as_pdf_rounded,
+                      label: 'PDF Quiz',
+                      description: 'Create quiz from PDF',
+                      gradient: [Colors.red.shade400, Colors.red.shade700],
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PDFQuizScreen()),
+                      ),
+                    ),
+                    _QuickActionButton(
                       icon: Icons.quiz_rounded,
                       label: 'Available',
                       description: 'Select from quizzes',
@@ -519,15 +530,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
-                      ),
-                    ),
-                    _QuickActionButton(
-                      icon: Icons.settings_rounded,
-                      label: 'Settings',
-                      description: 'Customize app',
-                      gradient: [Colors.green.shade400, Colors.green.shade700],
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Coming soon!')),
                       ),
                     ),
                   ],

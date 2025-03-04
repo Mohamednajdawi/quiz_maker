@@ -3,12 +3,27 @@ import '../models/question.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:http_parser/http_parser.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 
 class QuizService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
-  static const String baseUrl = 'http://localhost:8000'; // Update with your backend URL
+  
+  // Update baseUrl to work in both web and native environments
+  static String get baseUrl {
+    if (kIsWeb) {
+      // For web, use the window.location.hostname
+      // This assumes your backend is running on the same host but different port
+      return 'http://localhost:8000'; // You might need to adjust this for production
+    } else {
+      // For native apps
+      return 'http://localhost:8000';
+    }
+  }
 
   // Enable persistence
   static Future<void> initialize() async {
@@ -148,7 +163,7 @@ class QuizService {
   Future<Map<String, dynamic>> generateQuiz(String url, {int numQuestions = 5, String difficulty = 'medium'}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/generate-quiz'),
+        Uri.parse('${QuizService.baseUrl}/generate-quiz'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'url': url,
@@ -164,6 +179,93 @@ class QuizService {
       }
     } catch (e) {
       throw Exception('Error generating quiz: $e');
+    }
+  }
+
+  // Generate quiz from PDF
+  Future<Map<String, dynamic>> generateQuizFromPDF(dynamic pdfFile, {int numQuestions = 5, String difficulty = 'medium'}) async {
+    try {
+      if (kIsWeb) {
+        // Web implementation
+        // For web, pdfFile should be a Uint8List (bytes)
+        Uint8List pdfBytes;
+        String fileName;
+        
+        if (pdfFile is Map) {
+          // If we're receiving a map with bytes and filename (from file_picker on web)
+          pdfBytes = pdfFile['bytes'] as Uint8List;
+          fileName = pdfFile['name'] as String;
+        } else {
+          // If we're just receiving bytes directly
+          pdfBytes = pdfFile as Uint8List;
+          fileName = 'document.pdf';
+        }
+        
+        // Create a multipart request for web
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${QuizService.baseUrl}/generate-quiz-from-pdf'),
+        );
+        
+        // Add PDF file as bytes
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'pdf_file',
+            pdfBytes,
+            filename: fileName,
+            contentType: MediaType('application', 'pdf'),
+          ),
+        );
+        
+        // Add other fields
+        request.fields['num_questions'] = numQuestions.toString();
+        request.fields['difficulty'] = difficulty;
+        
+        // Send the request
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          return jsonDecode(response.body);
+        } else {
+          throw Exception('Failed to generate quiz from PDF: ${response.body}');
+        }
+      } else {
+        // Native implementation (Android, iOS, desktop)
+        // For native platforms, pdfFile should be a File
+        File nativePdfFile = pdfFile as File;
+        
+        // Create a multipart request
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${QuizService.baseUrl}/generate-quiz-from-pdf'),
+        );
+        
+        // Add PDF file to the request
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'pdf_file',
+            nativePdfFile.path,
+            contentType: MediaType('application', 'pdf'),
+          ),
+        );
+        
+        // Add other fields
+        request.fields['num_questions'] = numQuestions.toString();
+        request.fields['difficulty'] = difficulty;
+        
+        // Send the request
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          return jsonDecode(response.body);
+        } else {
+          throw Exception('Failed to generate quiz from PDF: ${response.body}');
+        }
+      }
+    } catch (e) {
+      throw Exception('Error generating quiz from PDF: $e');
     }
   }
 
@@ -257,7 +359,7 @@ class QuizService {
   Future<List<Map<String, dynamic>>> getAllAvailableQuizzes() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/topics'),
+        Uri.parse('${QuizService.baseUrl}/topics'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -276,7 +378,7 @@ class QuizService {
   Future<Map<String, dynamic>> getQuizByTopicId(int topicId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/quiz/$topicId'),
+        Uri.parse('${QuizService.baseUrl}/quiz/$topicId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -294,7 +396,7 @@ class QuizService {
   Future<Map<String, List<String>>> getCategoriesAndSubcategories() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/categories'),
+        Uri.parse('${QuizService.baseUrl}/categories'),
         headers: {'Content-Type': 'application/json'},
       );
 
