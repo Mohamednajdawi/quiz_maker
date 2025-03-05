@@ -11,6 +11,7 @@ load_dotenv()
 import requests
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session
 
@@ -55,7 +56,7 @@ class TopicResponse(BaseModel):
 @app.post("/generate-quiz")
 async def create_quiz(
     request: URLRequest, db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> JSONResponse:
     try:
         # Remove trailing slash if present
         url = str(request.url).rstrip("/")
@@ -89,7 +90,10 @@ async def create_quiz(
             db.add(quiz_question)
 
         db.commit()
-        return quiz
+        return JSONResponse(
+            content=quiz,
+            headers={"Content-Type": "application/json; charset=utf-8"}
+        )
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
             raise HTTPException(
@@ -108,7 +112,7 @@ async def create_quiz_from_pdf(
     num_questions: int = Form(5),
     difficulty: str = Form("medium"),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> JSONResponse:
     try:
         # Validate difficulty level
         if difficulty not in ["easy", "medium", "hard"]:
@@ -154,7 +158,10 @@ async def create_quiz_from_pdf(
                 db.add(quiz_question)
 
             db.commit()
-            return quiz
+            return JSONResponse(
+                content=quiz,
+                headers={"Content-Type": "application/json; charset=utf-8"}
+            )
         finally:
             # Clean up the temporary file
             if os.path.exists(temp_file_path):
@@ -166,46 +173,52 @@ async def create_quiz_from_pdf(
         )
 
 
-@app.get("/topics", response_model=List[TopicResponse])
-async def get_topics(db: Session = Depends(get_db)):
+@app.get("/topics")
+async def get_topics(db: Session = Depends(get_db)) -> JSONResponse:
     """Get all quiz topics"""
     topics = db.query(QuizTopic).all()
-    return [
-        {
-            "id": topic.id,
-            "topic": topic.topic,
-            "category": topic.category,
-            "subcategory": topic.subcategory,
-        }
-        for topic in topics
-    ]
+    return JSONResponse(
+        content=[
+            {
+                "id": topic.id,
+                "topic": topic.topic,
+                "category": topic.category,
+                "subcategory": topic.subcategory,
+            }
+            for topic in topics
+        ],
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
 
 
-@app.get("/quiz/{topic_id}", response_model=QuizResponse)
-async def get_quiz(topic_id: int, db: Session = Depends(get_db)):
+@app.get("/quiz/{topic_id}")
+async def get_quiz(topic_id: int, db: Session = Depends(get_db)) -> JSONResponse:
     """Get a specific quiz by topic ID"""
     topic = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
     if not topic:
         raise HTTPException(status_code=404, detail="Quiz topic not found")
 
     questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == topic_id).all()
-    return {
-        "topic": topic.topic,
-        "category": topic.category,
-        "subcategory": topic.subcategory,
-        "questions": [
-            {
-                "question": q.question,
-                "options": q.options,
-                "right_option": q.right_option,
-            }
-            for q in questions
-        ],
-    }
+    return JSONResponse(
+        content={
+            "topic": topic.topic,
+            "category": topic.category,
+            "subcategory": topic.subcategory,
+            "questions": [
+                {
+                    "question": q.question,
+                    "options": q.options,
+                    "right_option": q.right_option,
+                }
+                for q in questions
+            ],
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
 
 
 @app.get("/categories")
-async def get_categories(db: Session = Depends(get_db)):
+async def get_categories(db: Session = Depends(get_db)) -> JSONResponse:
     """Get all unique categories with their subcategories"""
     categories = {}
     topics = db.query(QuizTopic).all()
@@ -217,7 +230,10 @@ async def get_categories(db: Session = Depends(get_db)):
         if topic.subcategory not in categories[topic.category]:
             categories[topic.category].append(topic.subcategory)
 
-    return categories
+    return JSONResponse(
+        content=categories,
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
 
 
 @app.get("/health")
