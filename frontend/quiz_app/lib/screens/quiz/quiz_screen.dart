@@ -124,58 +124,79 @@ class _QuizScreenState extends State<QuizScreen> {
             const SizedBox(height: 24),
             ...List.generate(
               question.options.length,
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
+              (index) => Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                      offset: Offset(0, 2),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
                 child: Material(
-                  color: _answers[_currentIndex] == index
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                      : null,
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
                   child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
                     onTap: () => _selectAnswer(index),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.all(16.0),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _answers[_currentIndex] == index
                               ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade300,
+                              : Colors.grey.shade100,
+                          width: 1.5,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 24,
-                            height: 24,
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: 200),
+                            width: 28,
+                            height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              color: _answers[_currentIndex] == index
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.surface,
                               border: Border.all(
                                 color: _answers[_currentIndex] == index
                                     ? Theme.of(context).colorScheme.primary
-                                    : Colors.grey.shade500,
+                                    : Colors.grey.shade200,
+                                width: 1.5,
                               ),
-                              color: _answers[_currentIndex] == index
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
                             ),
-                            child: _answers[_currentIndex] == index
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 16,
-                                    color: Colors.white,
-                                  )
-                                : null,
+                            child: Center(
+                              child: Text(
+                                String.fromCharCode(65 + index),
+                                style: TextStyle(
+                                  color: _answers[_currentIndex] == index
+                                      ? Colors.white
+                                      : Theme.of(context).colorScheme.primary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              '${String.fromCharCode(65 + index)}. ${question.options[index]}',
+                              question.options[index],
                               style: TextStyle(
+                                fontSize: 15,
                                 color: _answers[_currentIndex] == index
                                     ? Theme.of(context).colorScheme.primary
-                                    : null,
+                                    : Theme.of(context).colorScheme.onSurface,
+                                fontWeight: _answers[_currentIndex] == index
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),

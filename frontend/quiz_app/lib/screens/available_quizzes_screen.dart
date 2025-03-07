@@ -579,15 +579,31 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
               ),
               const SizedBox(height: 40),
               Container(
-                width: 150,
-                height: 150,
+                width: 180,
+                height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  border: Border.all(
-                    color: Theme.of(context).primaryColor,
-                    width: 8,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: percentage >= 70
+                        ? [Color(0xFF66BB6A), Color(0xFF43A047)]
+                        : percentage >= 40
+                            ? [Color(0xFFFFB74D), Color(0xFFFFA726)]
+                            : [Color(0xFFEF5350), Color(0xFFE53935)],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (percentage >= 70
+                              ? Colors.green
+                              : percentage >= 40
+                                  ? Colors.orange
+                                  : Colors.red)
+                          .withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Column(
@@ -595,17 +611,17 @@ class _AvailableQuizzesScreenState extends State<AvailableQuizzesScreen> {
                     children: [
                       Text(
                         '$score/${_userAnswers.length}',
-                        style: TextStyle(
-                          fontSize: 28,
+                        style: const TextStyle(
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         '${percentage.toStringAsFixed(0)}%',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Theme.of(context).primaryColor,
+                          fontSize: 20,
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],

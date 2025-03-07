@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -254,15 +254,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                            Theme.of(context).colorScheme.secondary.withOpacity(0.6),
+                            Theme.of(context).colorScheme.primary.withOpacity(0.65),
+                            Theme.of(context).colorScheme.secondary.withOpacity(0.45),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1.5,
+                          color: Colors.white.withOpacity(0.15),
+                          width: 1,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            blurRadius: 20,
+                            spreadRadius: -5,
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
@@ -362,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context).shadowColor.withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -652,40 +659,72 @@ class _QuickActionButtonState extends State<_QuickActionButton> with SingleTicke
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(_isHovered ? 0.25 : 0.15),
+                          Colors.white.withOpacity(_isHovered ? 0.15 : 0.05),
+                        ],
+                      ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(_isHovered ? 0.3 : 0.2),
+                        color: Colors.white.withOpacity(_isHovered ? 0.4 : 0.2),
                         width: 1.5,
                       ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: -5,
+                        ),
+                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
                           transform: Matrix4.identity()
-                            ..scale(_isHovered ? 1.1 : 1.0),
+                            ..scale(_isHovered ? 1.15 : 1.0),
                           transformAlignment: Alignment.center,
-                          child: Icon(
-                            widget.icon,
-                            size: 32,
-                            color: Colors.white,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(_isHovered ? 0.9 : 0.7),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(_isHovered ? 0.4 : 0.2),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              size: 32,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 200),
                           style: TextStyle(
-                            fontSize: _isHovered ? 17 : 16,
+                            fontSize: _isHovered ? 18 : 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                           child: Text(widget.label),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         AnimatedOpacity(
                           duration: const Duration(milliseconds: 200),
                           opacity: _isHovered ? 1 : 0.8,
